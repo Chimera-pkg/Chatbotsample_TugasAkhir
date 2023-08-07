@@ -1,3 +1,4 @@
+import tensorflow as tf
 import nltk
 nltk.download('punkt')
 nltk.download('wordnet')
@@ -67,11 +68,17 @@ for doc in documents:
     training.append([bag, output_row])
 
 random.shuffle(training)
-training = np.array(training)
+
+max_length = max(len(item[0]) for item in training)
+training_padded = np.array([item[0] + [0] * (max_length - len(item[0])) + item[1] for item in training])
+
+training = np.array(training_padded)
+
 # create train and test lists. X - patterns, Y - intents
-train_x = list(training[:,0])
-train_y = list(training[:,1])
+train_x = list(training[:, :-1])
+train_y = list(training[:, -1:])
 print("Training data created")
+
 
 
 # Create model - 3 layers. First layer 128 neurons, second layer 64 neurons and 3rd output layer contains number of neurons
@@ -84,7 +91,8 @@ model.add(Dropout(0.5))
 model.add(Dense(len(train_y[0]), activation='softmax'))
 
 # Compile model. Stochastic gradient descent with Nesterov accelerated gradient gives good results for this model
-sgd = SGD(lr=0.01, decay=1e-6, momentum=0.9, nesterov=True)
+# optimizer = tf.keras.optimizers.legacy.SGD(decay=0.01)
+sgd = tf.keras.optimizers.legacy.SGD(decay=0.01)
 model.compile(loss='categorical_crossentropy', optimizer=sgd, metrics=['accuracy'])
 
 #fitting and saving the model
